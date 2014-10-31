@@ -41,17 +41,17 @@ homePage = msum [ viewForm, processForm ]
          do Happstack.Lite.method GET
             ok $ template "Glue TP" $
                H.form H.! A.action "/" H.! A.enctype "multipart/form-data" H.! A.method "POST" $ do
-                 H.label H.! A.for "msg" $ "Sequent to prove"
+                 H.label H.! A.for "msg" $ "Sequent to prove: "
                  H.input H.! A.size "150" H.! A.type_ "text" H.! A.id "msg" H.! A.name "msg"
                  H.input H.! A.type_ "submit" H.! A.value "Prove"
 
      processForm :: ServerPart Response
      processForm =
-         do Happstack.Lite.method POST
+         do Happstack.Lite.method [GET,POST]
             res <- lookText "msg"
             ok $ toResponse $ 
               case parseSequent (unpack res) of
-               Left s -> pageTemplate $ toHtml s
+               Left s -> pageTemplate 0 $ toHtml s
                Right s -> do
                  case s of
                    Left s -> printProofs s
@@ -69,8 +69,8 @@ printProofsWithConstants s = pproofs $ (evaluateState (toDecoratedWithConstants 
 pproofs ps =
   let ps' = nubByShortest (lambdaTermLength . term . snd . getVal) (\x y -> equivalentDecoratedSequent (getVal x) (getVal y)) $ map sanitizeVars ps
   in case ps' of
-    [] -> pageTemplate $ p << toHtml ("Not a theorem" :: String)
-    _ -> pageTemplate $ mconcat $ map (\x -> thediv << proof2html x) ps
+    [] -> pageTemplate (length ps') $ p << toHtml ("Not a theorem" :: String)
+    _ -> pageTemplate (length ps') $ mconcat $ map (\x -> thediv << proof2html x) ps'
 
 lambdaTermLength :: LambdaTerm -> Int
 lambdaTermLength (V _) = 1
@@ -83,10 +83,14 @@ lambdaTermLength (Pair a b) = lambdaTermLength a + lambdaTermLength b
 lambdaTermLength (FirstProjection a) = 1 + lambdaTermLength a
 lambdaTermLength (SecondProjection a) = 1 + lambdaTermLength a
 
-pageTemplate :: Html -> Html
-pageTemplate h = 
+pageTemplate :: Int -> Html -> Html
+pageTemplate l h = 
    header << style << primHtml css_script +++
-   body << (thediv << (h1 << toHtml ("Proofs" :: String)) ! [theclass "title"] +++ h)
+   body << (thediv << (h1 << toHtml ((show l) ++ " proof(s)" :: String)) ! [theclass "title"] +++ h +++ seqForm) where
+    seqForm =  form ! [action "/", enctype "multipart/form-data", Text.XHtml.method "POST"] <<
+                 ((label ! [thefor "msg"] << toHtml ("Sequent to prove: " :: String)) +++
+                  input ! [size "150", thetype "text", Text.XHtml.identifier "msg", name "msg"] +++
+                  input ! [thetype "submit", value "Prove"])
 
 nubByShortest :: Eq a => (a -> Int) -> 
                  (a -> a -> Bool) ->
