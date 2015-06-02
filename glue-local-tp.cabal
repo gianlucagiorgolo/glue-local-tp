@@ -17,4 +17,4 @@ cabal-version:       >=1.8
 executable glue-local-tp
    main-is: Main.hs
   -- other-modules:       
-  build-depends:       base ==4.6.*, transformers >= 0.3.0.0, glue-tp >= 0.1, xhtml >= 3000.2.1, blaze-html >= 0.7.0.1, happstack-lite >= 7.3.5, text >= 0.11.3.1
+  build-depends:       base, transformers >= 0.3.0.0, glue-tp >= 0.1, xhtml >= 3000.2.1, blaze-html >= 0.7.0.1, happstack-lite >= 7.3.5, text >= 0.11.3.1
